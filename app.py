@@ -5,22 +5,15 @@ import os
 import requests
 import re
 import logging
-from douyin_tiktok_scraper.scraper import Scraper
 from dotenv import load_dotenv
-import instaloader
 import yt_dlp
-import snscrape.modules.twitter as sntwitter
 
 # Configuration
 logging.getLogger().setLevel(logging.CRITICAL)
 load_dotenv()
 
-# Initialize scrapers
-tiktok_api = Scraper()
-instagram_loader = instaloader.Instaloader()
-
 token = os.getenv("TOKEN")
-BOT_USERNAME = '@Linklift_bot'
+BOT_USERNAME = '@LinkLift_Bot'
 CREATOR_HASHTAG = "@illusivehacks"
 
 # Platform detection patterns
@@ -91,47 +84,13 @@ def detect_platform(url: str) -> str:
             return platform
     return None
 
-async def hybrid_parsing_tiktok(url: str):
-    """TikTok/Douyin scraper - Your original function enhanced"""
+async def download_video(url: str, platform: str):
+    """Universal video downloader using yt-dlp"""
     try:
-        result = await tiktok_api.hybrid_parsing(url)
-
-        video = result["video_data"]["nwm_video_url_HQ"]
-        video_hq = result["video_data"]["nwm_video_url_HQ"]
-        music = result["music"]["play_url"]["uri"]
-        caption = result["desc"]
-
-        print("🎵 TikTok Video URL:", video)
-        print("🎵 TikTok Video_HQ URL:", video_hq)
-        print("🎵 TikTok Play URL:", music)
-        print("🎵 TikTok Caption:", caption)
-        
-        response_video = requests.get(video)
-        response_video_hq = requests.get(video_hq)
-
-        if response_video.status_code == 200:
-            video_stream = BytesIO(response_video.content)
-        else:
-            print(f"Failed to download TikTok MP4. Status code: {response_video.status_code}")
-
-        if response_video_hq.status_code == 200:
-            video_stream_hq = BytesIO(response_video_hq.content)
-        else:
-            print(f"Failed to download TikTok MP4. Status code: {response_video_hq.status_code}")
-        
-    except Exception as e:
-        print(f'❌ TikTok error occurred: {str(e)}')
-        return None
-
-    return video_stream, video_stream_hq, music, caption, video_hq
-
-async def download_instagram(url: str):
-    """Instagram Reels/Posts downloader"""
-    try:
-        print("📸 Processing Instagram URL...")
+        print(f"🚀 Processing {platform} URL: {url}")
         
         ydl_opts = {
-            'format': 'best[ext=mp4]',
+            'format': 'best[height<=720][ext=mp4]/best[ext=mp4]/best',
             'outtmpl': '%(title)s.%(ext)s',
             'quiet': True,
         }
@@ -139,91 +98,31 @@ async def download_instagram(url: str):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             video_url = info['url']
-            title = info.get('title', 'Instagram Video')
-            thumbnail = info.get('thumbnail', None)
-            
-            print(f"📸 Instagram Video URL: {video_url}")
-            
-            response = requests.get(video_url)
-            if response.status_code == 200:
-                video_stream = BytesIO(response.content)
-                return video_stream, None, None, title, video_url
-            else:
-                print(f"❌ Failed to download Instagram video. Status: {response.status_code}")
-                return None
-                
-    except Exception as e:
-        print(f'❌ Instagram error occurred: {str(e)}')
-        return None
-
-async def download_youtube(url: str):
-    """YouTube Videos/Shorts downloader"""
-    try:
-        print("📺 Processing YouTube URL...")
-        
-        ydl_opts = {
-            'format': 'best[height<=720][ext=mp4]',
-            'outtmpl': '%(title)s.%(ext)s',
-            'quiet': True,
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            video_url = info['url']
-            title = info.get('title', 'YouTube Video')
+            title = info.get('title', f'{platform.title()} Video')
+            uploader = info.get('uploader', 'Unknown')
             duration = info.get('duration', 0)
-            uploader = info.get('uploader', 'Unknown')
             
-            print(f"📺 YouTube Video URL: {video_url}")
+            print(f"✅ {platform} Video URL found: {video_url}")
             
-            response = requests.get(video_url)
+            # Download video to memory
+            response = requests.get(video_url, stream=True)
             if response.status_code == 200:
-                video_stream = BytesIO(response.content)
-                return video_stream, None, None, f"{title} - {uploader}", video_url
+                video_stream = BytesIO()
+                for chunk in response.iter_content(chunk_size=8192):
+                    video_stream.write(chunk)
+                video_stream.seek(0)
+                
+                caption = f"{title}"
+                if uploader and uploader != 'Unknown':
+                    caption += f" - @{uploader}"
+                
+                return video_stream, None, None, caption, video_url
             else:
-                print(f"❌ Failed to download YouTube video. Status: {response.status_code}")
+                print(f"❌ Failed to download {platform} video. Status: {response.status_code}")
                 return None
                 
     except Exception as e:
-        print(f'❌ YouTube error occurred: {str(e)}')
-        return None
-
-async def download_twitter(url: str):
-    """Twitter/X Video downloader"""
-    try:
-        print("🐦 Processing Twitter URL...")
-        
-        # Extract tweet ID from URL
-        tweet_id_match = re.search(r'/status/(\d+)', url)
-        if not tweet_id_match:
-            return None
-            
-        tweet_id = tweet_id_match.group(1)
-        
-        ydl_opts = {
-            'format': 'best[ext=mp4]',
-            'outtmpl': '%(title)s.%(ext)s',
-            'quiet': True,
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            video_url = info['url']
-            title = info.get('title', 'Twitter Video')
-            uploader = info.get('uploader', 'Unknown')
-            
-            print(f"🐦 Twitter Video URL: {video_url}")
-            
-            response = requests.get(video_url)
-            if response.status_code == 200:
-                video_stream = BytesIO(response.content)
-                return video_stream, None, None, f"{title} - @{uploader}", video_url
-            else:
-                print(f"❌ Failed to download Twitter video. Status: {response.status_code}")
-                return None
-                
-    except Exception as e:
-        print(f'❌ Twitter error occurred: {str(e)}')
+        print(f'❌ {platform} download error: {str(e)}')
         return None
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -256,28 +155,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         processing_message = await update.message.reply_text(
             f"⚡ *{platform_emoji} Processing {platform.title()}...*\n\n"
             f"🚀 Downloading at lightning speed...\n"
-            f"📦 Optimizing for fast delivery...\n"
-            f"🎯 Almost ready!\n\n"
+            f"📦 Optimizing for fast delivery...\n\n"
             f"{CREATOR_HASHTAG}",
             parse_mode='Markdown'
         )
 
         try:
-            # Route to appropriate scraper
-            if platform == 'tiktok':
-                result = await hybrid_parsing_tiktok(text)
-                platform_name = "TikTok"
-            elif platform == 'instagram':
-                result = await download_instagram(text)
-                platform_name = "Instagram"
-            elif platform == 'youtube':
-                result = await download_youtube(text)
-                platform_name = "YouTube"
-            elif platform == 'twitter':
-                result = await download_twitter(text)
-                platform_name = "Twitter"
-            else:
-                result = None
+            result = await download_video(text, platform)
 
             if result:
                 video = result[0]
@@ -287,12 +171,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 link = result[4]
                 
                 # Create caption text
-                caption_text = f"✨ *{platform_name} Download Complete!* 🎉\n\n"
+                caption_text = f"✨ *{platform.title()} Download Complete!* 🎉\n\n"
                 if caption:
-                    caption_text += f"📝 *Caption:* {caption}\n"
+                    caption_text += f"📝 *Title:* {caption}\n"
                 if music:
                     caption_text += f"🎵 *Sound:* {music}\n"
-                caption_text += f"🔗 *Link:* {link}\n\n"
+                caption_text += f"🔗 *Direct Link:* {link}\n\n"
                 caption_text += f"💫 *Powered by* {CREATOR_HASHTAG}\n"
                 caption_text += f"🎊 *Enjoy your content!*"
                 
@@ -308,7 +192,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await context.bot.edit_message_text(
                         chat_id=update.message.chat_id,
                         message_id=processing_message.message_id,
-                        text=f"✅ *{platform_name} Download Successful!* 🎉\n\n"
+                        text=f"✅ *{platform.title()} Download Successful!* 🎉\n\n"
                              f"⚡ Lightning fast service!\n\n"
                              f"{CREATOR_HASHTAG}",
                         parse_mode='Markdown'
@@ -332,7 +216,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     message_id=processing_message.message_id,
                     text=f"❌ *Download Failed* 😔\n\n"
                          f"Sorry {user.first_name}! Couldn't download from {platform}.\n"
-                         f"Please try a different link or platform.\n\n"
+                         f"Please try a different link.\n\n"
                          f"{CREATOR_HASHTAG}",
                     parse_mode='Markdown'
                 )
