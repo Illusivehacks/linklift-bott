@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  linklift-bot:
+    build: .
+    container_name: linklift-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./temp:/app/temp
+    # Koyeb will handle port mapping automatically

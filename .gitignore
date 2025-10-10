@@ -1,0 +1,42 @@
+# Environment
+.env
+.venv
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pycache/
+*.so
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+temp/
+downloads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Koyeb specific
+.dockerignore
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.mp3
+*.wav

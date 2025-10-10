@@ -1,0 +1,29 @@
+{
+  "test_urls": {
+    "tiktok": [
+      "https://www.tiktok.com/@example/video/123456789",
+      "https://vm.tiktok.com/ABC123/"
+    ],
+    "instagram": [
+      "https://www.instagram.com/reel/ABC123/",
+      "https://www.instagram.com/p/DEF456/"
+    ],
+    "youtube": [
+      "https://www.youtube.com/watch?v=abc123",
+      "https://youtu.be/xyz789"
+    ],
+    "twitter": [
+      "https://twitter.com/user/status/123456789",
+      "https://x.com/user/status/987654321"
+    ]
+  },
+  "bot_config": {
+    "test_token": "TEST_BOT_TOKEN_HERE",
+    "test_username": "@LinkLiftTestBot",
+    "supported_platforms": ["tiktok", "instagram", "youtube", "twitter"]
+  },
+  "scraper_tests": {
+    "timeout": 30,
+    "max_file_size": 50000000
+  }
+}
