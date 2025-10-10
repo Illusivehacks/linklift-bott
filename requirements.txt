@@ -4,3 +4,4 @@ python-dotenv==1.0.0
 instaloader==4.10.1
 yt-dlp==2023.11.16
 snscrape==0.6.2.20230320
+flask==2.3.3
