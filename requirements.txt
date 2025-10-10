@@ -1,6 +1,6 @@
 python-telegram-bot==20.7
 requests==2.31.0
-douyin-tiktok-scraper==1.2.1
+tiktok-scraper==0.1.4
 python-dotenv==1.0.0
 instaloader==4.10.1
 yt-dlp==2023.11.16
