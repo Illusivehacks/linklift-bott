@@ -7,6 +7,8 @@ import re
 import logging
 from dotenv import load_dotenv
 import yt_dlp
+from flask import Flask
+from threading import Thread
 
 # Configuration
 logging.getLogger().setLevel(logging.CRITICAL)
@@ -31,6 +33,69 @@ PLATFORM_EMOJIS = {
     'youtube': '📺',
     'twitter': '🐦'
 }
+
+# Create Flask app for health checks
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>LinkLift Bot - Active 🚀</title>
+        <style>
+            body { 
+                font-family: Arial, sans-serif; 
+                text-align: center; 
+                padding: 50px; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                color: white; 
+            }
+            .container { 
+                background: rgba(255,255,255,0.1); 
+                padding: 30px; 
+                border-radius: 15px; 
+                backdrop-filter: blur(10px);
+            }
+            h1 { font-size: 2.5em; margin-bottom: 20px; }
+            .status { 
+                font-size: 1.5em; 
+                color: #00ff00; 
+                font-weight: bold;
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.7; }
+                100% { opacity: 1; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔗 LinkLift Bot</h1>
+            <div class="status">🟢 ONLINE & ACTIVE</div>
+            <p>Telegram Social Media Downloader</p>
+            <p>Powered by <strong>LinkLift</strong></p>
+            <p>🚀 Hosted on Koyeb - 24/7 Service</p>
+        </div>
+    </body>
+    </html>
+    """
+
+@app.route('/health')
+def health():
+    return {"status": "healthy", "service": "LinkLift Bot", "timestamp": "active"}
+
+@app.route('/ping')
+def ping():
+    return "pong"
+
+def run_flask():
+    """Run Flask server in separate thread"""
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = f"""
@@ -237,23 +302,29 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f'🚨 Update {update} caused error {context.error}')
 
 if __name__ == '__main__':
+    # Start Flask server for health checks
+    flask_thread = Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    print("🌐 Flask health check server started on port 8000")
+    
     print('🚀 Starting LinkLift Bot...')
     print('📸 Supporting: Instagram, TikTok, YouTube, Twitter')
     print(f'💫 Creator: {CREATOR_HASHTAG}')
     
-    app = Application.builder().token(token).build()
+    app_bot = Application.builder().token(token).build()
 
     # Commands
-    app.add_handler(CommandHandler('start', start_command))
-    app.add_handler(CommandHandler('help', help_command))
-    app.add_handler(CommandHandler('custom', custom_command))
+    app_bot.add_handler(CommandHandler('start', start_command))
+    app_bot.add_handler(CommandHandler('help', help_command))
+    app_bot.add_handler(CommandHandler('custom', custom_command))
 
     # Messages
-    app.add_handler(MessageHandler(filters.TEXT, handle_message))
+    app_bot.add_handler(MessageHandler(filters.TEXT, handle_message))
 
     # Errors
-    app.add_error_handler(error)
+    app_bot.add_error_handler(error)
 
     # Polls the bot
     print('🔍 Polling...')
-    app.run_polling(poll_interval=3)
+    app_bot.run_polling(poll_interval=3)
